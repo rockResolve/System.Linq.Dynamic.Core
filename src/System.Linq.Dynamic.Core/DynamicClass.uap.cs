@@ -9,7 +9,7 @@ namespace System.Linq.Dynamic.Core
     /// </summary>
     public class DynamicClass : DynamicObject
     {
-        private readonly Dictionary<string, object> _properties = new Dictionary<string, object>();
+        protected readonly Dictionary<string, object> _propertiesDictionary = new Dictionary<string, object>();
 
         /// <summary>
         /// Initializes a new instance of the <see cref="DynamicClass"/> class.
@@ -19,7 +19,7 @@ namespace System.Linq.Dynamic.Core
         {
             foreach (var kvp in propertylist)
             {
-                _properties.Add(kvp.Key, kvp.Value);
+                _propertiesDictionary.Add(kvp.Key, kvp.Value);
             }
         }
 
@@ -35,7 +35,7 @@ namespace System.Linq.Dynamic.Core
         {
             get
             {
-                if (_properties.TryGetValue(name, out object result))
+                if (_propertiesDictionary.TryGetValue(name, out object result))
                 {
                     return result;
                 }
@@ -44,13 +44,13 @@ namespace System.Linq.Dynamic.Core
             }
             set
             {
-                if (_properties.ContainsKey(name))
+                if (_propertiesDictionary.ContainsKey(name))
                 {
-                    _properties[name] = value;
+                    _propertiesDictionary[name] = value;
                 }
                 else
                 {
-                    _properties.Add(name, value);
+                    _propertiesDictionary.Add(name, value);
                 }
             }
         }
@@ -63,7 +63,7 @@ namespace System.Linq.Dynamic.Core
         /// </returns>
         public override IEnumerable<string> GetDynamicMemberNames()
         {
-            return _properties.Keys;
+            return _propertiesDictionary.Keys;
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace System.Linq.Dynamic.Core
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
             var name = binder.Name;
-            _properties.TryGetValue(name, out result);
+            _propertiesDictionary.TryGetValue(name, out result);
 
             return true;
         }
@@ -93,13 +93,13 @@ namespace System.Linq.Dynamic.Core
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
             string name = binder.Name;
-            if (_properties.ContainsKey(name))
+            if (_propertiesDictionary.ContainsKey(name))
             {
-                _properties[name] = value;
+                _propertiesDictionary[name] = value;
             }
             else
             {
-                _properties.Add(name, value);
+                _propertiesDictionary.Add(name, value);
             }
 
             return true;

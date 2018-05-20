@@ -18,7 +18,7 @@ namespace System.Linq.Dynamic.Core
     /// </summary>
     public abstract class DynamicClass : DynamicObject
     {
-        private Dictionary<string, object> _propertiesDictionary;
+        protected Dictionary<string, object> _propertiesDictionary;
 
         private Dictionary<string, object> Properties
         {

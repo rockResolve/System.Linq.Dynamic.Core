@@ -50,10 +50,21 @@ namespace ConsoleAppEF2
             {
                 Console.WriteLine("result {0}", JsonConvert.SerializeObject(result, Formatting.Indented));
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                // Console.WriteLine(e);
+                Console.WriteLine(e);
             }
+
+            var random = new Random((int)DateTime.Now.Ticks);
+
+            var x = Enumerable.Range(0, 10).Select(i => new
+            {
+                Id = i,
+                Value = random.Next(),
+            });
+            var resultWithDynamicObjectClass = x.AsQueryable().Select(new ParsingConfig { UseDynamicObjectClassForAnonymousTypes = true }, "it").OrderBy("Value").ToDynamicList();
+            Console.WriteLine("resultWithDynamicObjectClass  {0}", JsonConvert.SerializeObject(resultWithDynamicObjectClass, Formatting.Indented));
+
 
             var all = new
             {

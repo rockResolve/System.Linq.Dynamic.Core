@@ -108,8 +108,7 @@ namespace System.Linq.Dynamic.Core
 
             string key = GenerateKey(properties, createParameterCtor);
 
-            Type type;
-            if (!GeneratedTypes.TryGetValue(key, out type))
+            if (!GeneratedTypes.TryGetValue(key, out Type type))
             {
                 // We create only a single class at a time, through this lock
                 // Note that this is a variant of the double-checked locking.

@@ -1167,33 +1167,7 @@ namespace System.Linq.Dynamic.Core.Parser
                 if (_parsingConfig != null && _parsingConfig.UseDynamicObjectClassForAnonymousTypes)
                 {
 #endif
-                    type = typeof(DynamicClass);
-                    Type typeForKeyValuePair = typeof(KeyValuePair<string, object>);
-#if NET35 || NET40
-                    ConstructorInfo constructorForKeyValuePair = typeForKeyValuePair.GetConstructors().First();
-#else
-                    ConstructorInfo constructorForKeyValuePair = typeForKeyValuePair.GetTypeInfo().DeclaredConstructors.First();
-#endif
-                    var arrayIndexParams = new List<Expression>();
-                    for (int i = 0; i < expressions.Count; i++)
-                    {
-                        // Just convert the expression always to an object expression.
-                        UnaryExpression boxingExpression = Expression.Convert(expressions[i], typeof(object));
-                        NewExpression parameter = Expression.New(constructorForKeyValuePair, (Expression)Expression.Constant(properties[i].Name), boxingExpression);
-
-                        arrayIndexParams.Add(parameter);
-                    }
-
-                    // Create an expression tree that represents creating and initializing a one-dimensional array of type KeyValuePair<string, object>.
-                    NewArrayExpression newArrayExpression = Expression.NewArrayInit(typeof(KeyValuePair<string, object>), arrayIndexParams);
-
-                    // Get the "public DynamicClass(KeyValuePair<string, object>[] propertylist)" constructor
-#if NET35 || NET40
-                    ConstructorInfo constructor = type.GetConstructors().First();
-#else
-                    ConstructorInfo constructor = type.GetTypeInfo().DeclaredConstructors.First();
-#endif
-                    return Expression.New(constructor, newArrayExpression);
+                    return DynamicObjectClassFactory.CreateNewExpression(properties, expressions);
 #if !UAP10_0
                 }
 
