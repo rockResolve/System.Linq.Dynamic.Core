@@ -13,7 +13,10 @@ using System.Reflection;
 
 namespace System.Linq.Dynamic.Core.Parser
 {
-    internal class ExpressionParser
+    /// <summary>
+    /// ExpressionParser
+    /// </summary>
+    public class ExpressionParser
     {
         static readonly string methodOrderBy = nameof(Queryable.OrderBy);
         static readonly string methodOrderByDescending = nameof(Queryable.OrderByDescending);
@@ -33,6 +36,13 @@ namespace System.Linq.Dynamic.Core.Parser
         private Type _resultType;
         private bool _createParameterCtor;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ExpressionParser"/> class.
+        /// </summary>
+        /// <param name="parameters">The parameters.</param>
+        /// <param name="expression">The expression.</param>
+        /// <param name="values">The values.</param>
+        /// <param name="parsingConfig">The parsing configuration.</param>
         public ExpressionParser([CanBeNull] ParameterExpression[] parameters, [NotNull] string expression, [CanBeNull] object[] values, [CanBeNull] ParsingConfig parsingConfig)
         {
             Check.NotEmpty(expression, nameof(expression));
@@ -94,7 +104,7 @@ namespace System.Linq.Dynamic.Core.Parser
             }
         }
 
-        void AddSymbol(string name, object value)
+        private void AddSymbol(string name, object value)
         {
             if (_symbols.ContainsKey(name))
             {
@@ -104,7 +114,13 @@ namespace System.Linq.Dynamic.Core.Parser
             _symbols.Add(name, value);
         }
 
-        public Expression Parse(Type resultType, bool createParameterCtor)
+        /// <summary>
+        /// Uses the TextParser to parse the string into the specified result type.
+        /// </summary>
+        /// <param name="resultType">Type of the result.</param>
+        /// <param name="createParameterCtor">if set to <c>true</c> [create parameter ctor].</param>
+        /// <returns>Expression</returns>
+        public Expression Parse([CanBeNull] Type resultType, bool createParameterCtor = true)
         {
             _resultType = resultType;
             _createParameterCtor = createParameterCtor;
@@ -126,7 +142,7 @@ namespace System.Linq.Dynamic.Core.Parser
         }
 
 #pragma warning disable 0219
-        public IList<DynamicOrdering> ParseOrdering(bool forceThenBy = false)
+        internal IList<DynamicOrdering> ParseOrdering(bool forceThenBy = false)
         {
             var orderings = new List<DynamicOrdering>();
             while (true)
@@ -499,9 +515,21 @@ namespace System.Linq.Dynamic.Core.Parser
                         }
                     }
 
+
                     if (!typesAreSameAndImplementCorrectInterface)
                     {
-                        CheckAndPromoteOperands(isEquality ? typeof(IEqualitySignatures) : typeof(IRelationalSignatures), op.Text, ref left, ref right, op.Pos);
+                        if (left.Type.GetTypeInfo().IsClass && right is ConstantExpression && HasImplicitConversion(left.Type, right.Type))
+                        {
+                            left = Expression.Convert(left, right.Type);
+                        }
+                        else if (right.Type.GetTypeInfo().IsClass && left is ConstantExpression && HasImplicitConversion(right.Type, left.Type))
+                        {
+                            right = Expression.Convert(right, left.Type);
+                        }
+                        else
+                        {
+                            CheckAndPromoteOperands(isEquality ? typeof(IEqualitySignatures) : typeof(IRelationalSignatures), op.Text, ref left, ref right, op.Pos);
+                        }
                     }
                 }
 
@@ -531,6 +559,13 @@ namespace System.Linq.Dynamic.Core.Parser
             }
 
             return left;
+        }
+
+        private bool HasImplicitConversion(Type baseType, Type targetType)
+        {
+            return baseType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .Where(mi => mi.Name == "op_Implicit" && mi.ReturnType == targetType)
+                .Any(mi => mi.GetParameters().FirstOrDefault()?.ParameterType == baseType);
         }
 
         private ConstantExpression ParseEnumToConstantExpression(int pos, Type leftType, ConstantExpression constantExpr)
@@ -1185,13 +1220,30 @@ namespace System.Linq.Dynamic.Core.Parser
             ConstructorInfo ctor = type.GetConstructor(propertyTypes);
             if (ctor != null && ctor.GetParameters().Length == expressions.Count)
             {
-                return Expression.New(ctor, expressions, (IEnumerable<MemberInfo>)propertyInfos);
+                var expressionsPromoted = new List<Expression>();
+
+                // Loop all expressions and promote if needed
+                for (int i = 0; i < propertyTypes.Length; i++)
+                {
+                    Type propertyType = propertyTypes[i];
+                    Type expressionType = expressions[i].Type;
+
+                    // Promote from Type to Nullable Type if needed
+                    expressionsPromoted.Add(ExpressionPromoter.Promote(expressions[i], propertyType, true, true));
+                }
+
+                return Expression.New(ctor, expressionsPromoted, (IEnumerable<MemberInfo>)propertyInfos);
             }
 
             MemberBinding[] bindings = new MemberBinding[properties.Count];
             for (int i = 0; i < bindings.Length; i++)
             {
-                bindings[i] = Expression.Bind(type.GetProperty(properties[i].Name), expressions[i]);
+                PropertyInfo property = type.GetProperty(properties[i].Name);
+                Type propertyType = property.PropertyType;
+                Type expressionType = expressions[i].Type;
+
+                // Promote from Type to Nullable Type if needed
+                bindings[i] = Expression.Bind(property, ExpressionPromoter.Promote(expressions[i], propertyType, true, true));
             }
 
             return Expression.MemberInit(Expression.New(type), bindings);
@@ -1606,7 +1658,7 @@ namespace System.Linq.Dynamic.Core.Parser
             }
         }
 
-        public static Type ToNullableType(Type type)
+        internal static Type ToNullableType(Type type)
         {
             Check.NotNull(type, nameof(type));
 

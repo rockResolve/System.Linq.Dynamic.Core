@@ -79,12 +79,17 @@ namespace ConsoleAppEF2
                 CustomTypeProvider = new C()
             };
 
+            var dateLastModified = new DateTime(2018, 1, 15);
+
             var context = new TestContext();
-            context.Cars.Add(new Car { Brand = "Ford", Color = "Blue", Vin = "yes", Year = "2017" });
-            context.Cars.Add(new Car { Brand = "Fiat", Color = "Red", Vin = "yes", Year = "2016" });
-            context.Cars.Add(new Car { Brand = "Alfa", Color = "Black", Vin = "no", Year = "1979" });
-            context.Cars.Add(new Car { Brand = "Alfa", Color = "Black", Vin = "a%bc", Year = "1979" });
+            context.Cars.Add(new Car { Brand = "Ford", Color = "Blue", Vin = "yes", Year = "2017", DateLastModified = dateLastModified });
+            context.Cars.Add(new Car { Brand = "Fiat", Color = "Red", Vin = "yes", Year = "2016", DateLastModified = dateLastModified.AddDays(1) });
+            context.Cars.Add(new Car { Brand = "Alfa", Color = "Black", Vin = "no", Year = "1979", DateLastModified = dateLastModified.AddDays(2) });
+            context.Cars.Add(new Car { Brand = "Alfa", Color = "Black", Vin = "a%bc", Year = "1979", DateLastModified = dateLastModified.AddDays(3) });
             context.SaveChanges();
+
+            var carDateLastModified = context.Cars.Where(config, "DateLastModified > \"2018-01-16\"");
+            Console.WriteLine("carDateLastModified {0}", JsonConvert.SerializeObject(carDateLastModified, Formatting.Indented));
 
             var carFirstOrDefault = context.Cars.Where(config, "Brand == \"Ford\"");
             Console.WriteLine("carFirstOrDefault {0}", JsonConvert.SerializeObject(carFirstOrDefault, Formatting.Indented));
