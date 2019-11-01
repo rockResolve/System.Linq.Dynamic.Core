@@ -1,5 +1,7 @@
-﻿using NFluent;
+﻿using System.Collections;
+using NFluent;
 using System.Linq.Dynamic.Core.Parser;
+using FluentAssertions;
 using Xunit;
 
 namespace System.Linq.Dynamic.Core.Tests.Parser
@@ -59,6 +61,17 @@ namespace System.Linq.Dynamic.Core.Tests.Parser
 
             // Assert
             Check.That(result).IsFalse();
+        }
+
+        [Theory]
+        [InlineData(typeof(IEnumerable), typeof(ICollection), true)]
+        public void TypeHelper_IsCompatibleWith_Collections(Type source, Type target, bool isCompatible)
+        {
+            // Assign + Act
+            var result = TypeHelper.IsCompatibleWith(source, target);
+
+            // Assert
+            result.Should().Be(isCompatible);
         }
     }
 }

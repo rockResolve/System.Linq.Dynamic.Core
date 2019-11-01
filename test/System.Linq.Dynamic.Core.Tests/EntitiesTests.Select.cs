@@ -59,7 +59,7 @@ namespace System.Linq.Dynamic.Core.Tests
             // Arrange
             PopulateTestData(5, 0);
 
-            var expected = _context.Blogs.Select(x => new {}).ToList();
+            var expected = _context.Blogs.Select(x => new { }).ToList();
 
             // Act
             var test = _context.Blogs.GroupBy(config, "BlogId", "new()").Select<object>("new()").ToList();
@@ -144,6 +144,20 @@ namespace System.Linq.Dynamic.Core.Tests
                 Assert.True(expectedRow.Posts != null);
                 Assert.Equal(expectedRow.Posts.ToList(), testRow.Posts);
             }
+        }
+
+        [Fact]
+        public void Entities_Select_AllowNewToEvaluateAnyType()
+        {
+            // Arrange
+            PopulateTestData(2, 5);
+            var config = new ParsingConfig { AllowNewToEvaluateAnyType = true };
+
+            // Act
+            var result = _context.Blogs.Select<Blog>(config, $"new(Name, Posts.Select(new {typeof(Post).FullName}(Title)).ToList() as Posts)").FirstOrDefault();
+
+            // Assert
+            Assert.NotNull(result);
         }
     }
 }

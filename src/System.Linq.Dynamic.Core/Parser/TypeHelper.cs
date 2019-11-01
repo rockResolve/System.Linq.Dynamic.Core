@@ -40,6 +40,12 @@ namespace System.Linq.Dynamic.Core.Parser
 
             if (!target.IsValueType)
             {
+                //bool implementsInterface = target.GetInterfaces().Contains(source);
+                //if (implementsInterface)
+                //{
+                //    return true;
+                //}
+
                 return target.IsAssignableFrom(source);
             }
 
@@ -174,10 +180,18 @@ namespace System.Linq.Dynamic.Core.Parser
             {
                 return true;
             }
+
             if (!target.GetTypeInfo().IsValueType)
             {
+                //bool implementsInterface = target.GetInterfaces().Contains(source);
+                //if (implementsInterface)
+                //{
+                //    return true;
+                //}
+
                 return target.IsAssignableFrom(source);
             }
+
             Type st = GetNonNullableType(source);
             Type tt = GetNonNullableType(target);
 
